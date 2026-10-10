@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>اتاق دونفره من و رستا 💛</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#211a3a;color:white;font-family:Tahoma,Arial,sans-serif}
+header{text-align:center;padding:22px 10px}
+header h2{font-size:22px;margin:0 0 8px}
+header p{font-size:12px;color:#e1d6ff}
+button,input,textarea{font:inherit}
+button{border:0;border-radius:12px;padding:11px;background:#8b68c7;color:white;cursor:pointer}
+button:active{opacity:.75}
+.toolbar,.choices,.row{display:flex;flex-wrap:wrap;justify-content:center;gap:8px}
+.toolbar{padding:0 10px 16px}
+.toolbar button,.choices button{background:#493767}
+button.active{background:#d36baf}
+#room{position:relative;isolation:isolate;width:calc(100% - 20px);max-width:900px;height:min(65vh,570px);min-height:350px;margin:auto;overflow:hidden;border:3px solid #b69ce5;border-radius:16px;background:linear-gradient(#8c76b5,#c99cc8 55%,#47334e)}
+#roomImage{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;pointer-events:none;image-rendering:pixelated}
+#room::after{content:"";position:absolute;inset:0;z-index:1;pointer-events:none;background:transparent}
+#room.rainy::after{background:#6478b52b}
+#room.night::after{background:#11132f70}
+.room-item,.room-note{z-index:2}
+.room-item{position:absolute;transform:translate(-50%,-50%);font-size:clamp(34px,9vw,62px);cursor:grab;touch-action:none;user-select:none;filter:drop-shadow(2px 3px 2px #0005)}
+.room-note{position:absolute;transform:translate(-50%,-50%);width:125px;min-height:65px;padding:9px;background:#fff2b9;color:#563b50;border:2px solid #e6c66b;border-radius:6px;font-size:12px;text-align:center;overflow-wrap:anywhere;touch-action:none;user-select:none;cursor:grab;box-shadow:3px 4px 0 #0003}
+.room-note button{display:block;width:100%;margin-top:6px;padding:5px;background:#b95d82;font-size:10px}
+.panel{width:calc(100% - 24px);max-width:700px;margin:18px auto;padding:16px;border:1px solid #655184;border-radius:16px;background:#35294f}
+.panel h3{font-size:16px;margin:0 0 13px}
+input,textarea{display:block;width:100%;margin:0 0 10px;padding:12px;border-radius:10px;border:1px solid #d3b9e5;background:#fff9ff;color:#322440}
+textarea{min-height:75px}
+.row>*{flex:1}
+#status{text-align:center;font-size:12px;padding:12px;color:#dfd1ff}
+footer{text-align:center;padding:15px;font-size:12px;color:#d6c6ee}
+@media(max-width:420px){#room{height:55vh;min-height:330px}}
+</style>
+</head>
+<body>
+<header>
+<h2>🏡 اتاق دونفره من و رستا 💛</h2>
+<p>یه گوشه‌ی کوچیک از دنیای مشترک ما</p>
+</header>
+
+<div class="toolbar">
+<button data-weather="normal" class="active">🌸 معمولی</button>
+<button data-weather="sunny">☀️ آفتابی</button>
+<button data-weather="rainy">🌧️ بارونی</button>
+<button data-weather="night">🌙 شب</button>
+</div>
+
+<div id="room">
+<img id="roomImage" src="file:///storage/emulated/0/rastaroom/pixel-room.png" alt="">
+</div>
+
+<div class="panel">
+<h3>🪴 وسایل اتاقمون</h3>
+<div class="choices">
+<button data-item="🛏️">🛏️ تخت</button>
+<button data-item="🛋️">🛋️ مبل</button>
+<button data-item="🌷">🌷 گل</button>
+<button data-item="🪴">🪴 گلدون</button>
+<button data-item="🧸">🧸 عروسک</button>
+<button data-item="🕯️">🕯️ شمع</button>
+<button data-item="🐱">🐱 گربه</button>
+<button data-item="💗">💗 قلب</button>
+<button data-item="🪟">🪟 پنجره</button>
+<button data-item="🧁">🧁 شیرینی</button>
+</div>
+</div>
+
+<div class="panel">
+<h3>💌 یادداشت برای همدیگه</h3>
+<input id="noteTitle" maxlength="60" placeholder="مثلاً برای رستای عزیزم">
+<textarea id="noteText" maxlength="300" placeholder="یه جمله قشنگ بنویس..."></textarea>
+<button id="addNote">💌 گذاشتن یادداشت</button>
+</div>
+
+<div class="panel">
+<h3>💕 شخصیت‌های ما</h3>
+<div class="row">
+<button id="addMe">🧑 من</button>
+<button id="addRasta">👧 رستا</button>
+</div>
+</div>
+
+<div class="panel">
+<h3>🧹 مرتب کردن اتاق</h3>
+<div class="row">
+<button id="saveNow">💾 ذخیره</button>
+<button id="resetRoom">↩️ بازنشانی</button>
+</div>
+</div>
+
+<div id="status">اتاقمون آماده می‌شه 💗</div>
+<footer>ساخته‌شده با عشق، برای من و رستا 💛</footer>
+
+<script>
+(function(){
+"use strict";
+const room=document.getElementById("room");
+const statusBox=document.getElementById("status");
+const image=document.getElementById("roomImage");
+const KEY="rasta-room-local-v1";
+let nextId=1,weather="normal",items=[],notes=[];
+
+function id(){return String(Date.now())+"-"+nextId++}
+function say(t){statusBox.textContent=t}
+
+function initial(){
+return {
+weather:"normal",
+items:[
+{id:id(),emoji:"🛏️",x:24,y:70},
+{id:id(),emoji:"🪴",x:12,y:45},
+{id:id(),emoji:"🌷",x:82,y:63},
+{id:id(),emoji:"🧸",x:67,y:76},
+{id:id(),emoji:"🧑",x:42,y:77},
+{id:id(),emoji:"👧",x:53,y:77}
+],
+notes:[]
+};
+}
+
+function save(){
+try{
+localStorage.setItem(KEY,JSON.stringify({weather,items,notes}));
+say("تغییرات روی این دستگاه ذخیره شد 💗");
+}catch(e){say("ذخیره انجام نشد؛ مرورگر را بررسی کن.")}
+}
+
+function load(){
+try{
+const raw=localStorage.getItem(KEY);
+if(raw){
+const s=JSON.parse(raw);
+if(Array.isArray(s.items)&&Array.isArray(s.notes)){
+items=s.items;notes=s.notes;
+if(["normal","sunny","rainy","night"].includes(s.weather))weather=s.weather;
+return;
+}
+}
+}catch(e){}
+const s=initial();items=s.items;notes=s.notes;weather=s.weather;
+}
+
+function drag(el,obj){
+let startX=0,startY=0,oldX=0,oldY=0,moved=false;
+el.addEventListener("pointerdown",function(e){
+if(e.target.closest("button"))return;
+e.preventDefault();
+startX=e.clientX;startY=e.clientY;oldX=obj.x;oldY=obj.y;moved=false;
+try{el.setPointerCapture(e.pointerId)}catch(err){}
+function move(ev){
+const r=room.getBoundingClientRect();
+const dx=(ev.clientX-startX)/r.width*100;
+const dy=(ev.clientY-startY)/r.height*100;
+if(Math.abs(dx)+Math.abs(dy)>0.5)moved=true;
+obj.x=Math.max(5,Math.min(95,oldX+dx));
+obj.y=Math.max(7,Math.min(93,oldY+dy));
+el.style.left=obj.x+"%";el.style.top=obj.y+"%";
+}
+function end(){
+el.removeEventListener("pointermove",move);
+el.removeEventListener("pointerup",end);
+el.removeEventListener("pointercancel",end);
+if(moved)save();
+}
+el.addEventListener("pointermove",move);
+el.addEventListener("pointerup",end);
+el.addEventListener("pointercancel",end);
+});
+}
+
+function render(){
+room.querySelectorAll(".room-item,.room-note").forEach(e=>e.remove());
+room.classList.remove("sunny","rainy","night");
+if(weather!=="normal")room.classList.add(weather);
+document.querySelectorAll("[data-weather]").forEach(b=>{
+b.classList.toggle("active",b.dataset.weather===weather);
+});
+items.forEach(obj=>{
+const el=document.createElement("div");
+el.className="room-item";el.textContent=obj.emoji;
+el.style.left=obj.x+"%";el.style.top=obj.y+"%";
+drag(el,obj);room.appendChild(el);
+});
+notes.forEach(obj=>{
+const el=document.createElement("div");
+el.className="room-note";
+el.style.left=obj.x+"%";el.style.top=obj.y+"%";
+const title=document.createElement("strong");
+title.textContent=obj.title||"برای تو 💛";
+const txt=document.createElement("div");txt.textContent=obj.text;
+const del=document.createElement("button");
+del.textContent="حذف یادداشت";
+del.addEventListener("pointerdown",e=>e.stopPropagation());
+del.addEventListener("click",e=>{
+e.stopPropagation();notes=notes.filter(n=>n.id!==obj.id);render();save();
+});
+el.append(title,txt,del);drag(el,obj);room.appendChild(el);
+});
+}
+
+function addItem(emoji){
+items.push({id:id(),emoji,x:45+Math.random()*10,y:40+Math.random()*20});
+render();save();
+}
+
+document.querySelectorAll("[data-item]").forEach(b=>{
+b.addEventListener("click",()=>addItem(b.dataset.item));
+});
+document.querySelectorAll("[data-weather]").forEach(b=>{
+b.addEventListener("click",()=>{
+weather=b.dataset.weather;render();save();
+});
+});
+document.getElementById("addMe").addEventListener("click",()=>addItem("🧑"));
+document.getElementById("addRasta").addEventListener("click",()=>addItem("👧"));
+
+document.getElementById("addNote").addEventListener("click",()=>{
+const title=document.getElementById("noteTitle");
+const input=document.getElementById("noteText");
+const text=input.value.trim();
+if(!text){alert("اول یه جمله برای یادداشت بنویس 💌");return}
+notes.push({id:id(),title:title.value.trim()||"برای تو 💛",text,x:50,y:35});
+title.value="";input.value="";render();save();
+});
+
+document.getElementById("saveNow").addEventListener("click",save);
+document.getElementById("resetRoom").addEventListener("click",()=>{
+if(!confirm("اتاق به حالت اول برگردد؟"))return;
+const s=initial();items=s.items;notes=s.notes;weather=s.weather;render();save();
+});
+
+image.addEventListener("error",()=>{
+image.style.display="none";
+say("عکس پس‌زمینه پیدا نشد؛ وسایل اتاق همچنان کار می‌کنند.");
+});
+image.addEventListener("load",()=>{image.style.display="block"});
+load();render();say("اتاقمون آماده است 💛");
+})();
+</script>
+</body>
+</html>
